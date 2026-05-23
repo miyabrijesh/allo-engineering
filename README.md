@@ -1,36 +1,270 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Allo Engineering – Inventory Reservation System
 
-## Getting Started
+A backend-first inventory reservation system built as part of the Allo Engineering take-home exercise.
 
-First, run the development server:
+This project models inventory availability across warehouses and exposes APIs to retrieve inventory information while preparing the foundation for reservation-based order fulfillment.
+
+---
+
+## Problem Statement
+
+In e-commerce systems, stock cannot simply be deducted at checkout because payment flows may take time (UPI, redirects, 3DS authentication, etc.).
+
+If inventory is reduced too late:
+- Multiple users may purchase the same unit
+- Refunds become necessary
+- Customer experience degrades
+
+If inventory is reduced too early:
+- Inventory appears unavailable
+- Cart abandonment causes artificial stock depletion
+
+The intended solution is a **temporary reservation mechanism**:
+- Reserve inventory for a short duration
+- Confirm reservation after payment
+- Release inventory automatically on expiry
+
+---
+
+## Current Implementation
+
+Implemented:
+
+- Product and warehouse inventory model
+- PostgreSQL database using Supabase
+- Prisma ORM integration
+- Inventory querying API
+- Product ↔ Warehouse relationship mapping
+- Stock tracking (`total` vs `reserved`)
+- Backend API foundation for reservation workflows
+
+In Progress / Planned:
+
+- Reservation creation endpoint
+- Reservation confirmation flow
+- Reservation release flow
+- Expiry automation
+- Frontend reservation experience
+- Concurrency-safe reservation logic
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|--------|-----------|
+| Frontend | Next.js (App Router) |
+| Backend | Next.js API Routes |
+| Database | PostgreSQL (Supabase) |
+| ORM | Prisma |
+| Language | TypeScript |
+
+---
+
+## Database Design
+
+### Product
+
+Represents sellable inventory.
+
+Fields:
+- id
+- name
+
+---
+
+### Warehouse
+
+Represents physical storage locations.
+
+Fields:
+- id
+- name
+
+---
+
+### Inventory
+
+Tracks inventory per warehouse.
+
+Fields:
+
+- id
+- productId
+- warehouseId
+- total
+- reserved
+
+Available inventory is calculated as:
+
+```text
+available = total - reserved
+```
+
+---
+
+### Reservation
+
+Tracks temporary inventory holds.
+
+Fields:
+
+- id
+- productId
+- warehouseId
+- quantity
+- status
+- expiresAt
+- createdAt
+
+Statuses:
+
+```text
+PENDING
+CONFIRMED
+RELEASED
+```
+
+---
+
+## API
+
+### GET /api/products
+
+Returns inventory with related warehouse and product information.
+
+Example response:
+
+```json
+[
+  {
+    "id": "inv001",
+    "total": 10,
+    "reserved": 0,
+    "product": {
+      "name": "iPhone 16"
+    },
+    "warehouse": {
+      "name": "Warehouse A"
+    }
+  }
+]
+```
+
+---
+
+## Local Setup
+
+Clone repository:
+
+```bash
+git clone https://github.com/miyabrijesh/allo-engineering.git
+```
+
+Enter project:
+
+```bash
+cd allo-engineering
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create environment file:
+
+```env
+DATABASE_URL=your_supabase_connection
+DIRECT_URL=your_direct_connection
+```
+
+Generate Prisma client:
+
+```bash
+npx prisma generate
+```
+
+Run migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+Start development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+API endpoint:
 
-## Learn More
+```text
+http://localhost:3000/api/products
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Example Seed Data
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Warehouse:
 
-## Deploy on Vercel
+```text
+Warehouse A
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Product:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+iPhone 16
+```
+
+Inventory:
+
+```text
+Total: 10
+Reserved: 0
+```
+
+---
+
+## Tradeoffs
+
+For this implementation:
+
+- Focused first on reliable data modeling
+- Prioritized Prisma + PostgreSQL integration
+- Deferred distributed locking and expiry workers
+
+Production improvements:
+
+- Redis locking
+- Background expiry workers
+- Reservation idempotency
+- Reservation queue processing
+- Monitoring and retry mechanisms
+
+---
+
+## Future Improvements
+
+- Concurrency-safe reservation endpoint
+- Reservation countdown UI
+- Automatic release scheduling
+- Warehouse prioritization
+- Reservation analytics
+
+---
+
+## Author
+
+Miya Brijesh
+
+Built for Allo Engineering Take-Home Exercise.
